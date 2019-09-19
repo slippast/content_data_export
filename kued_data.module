@@ -1,0 +1,512 @@
+<?php
+// $Id$
+
+/**
+ * Implements hook_permission().
+ */
+function kued_data_permission() {
+  return array(
+    'administer kued_data' => array(
+      'title' => t('Administer Data Exports'),
+      'description' => t('Perform KUED Data Exports.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu().
+*/
+function kued_data_menu() {
+  $items = array(); 
+  $items['admin/config/content/kued/data'] = array(
+    'title' => 'KUED Data Export',
+    'description' => 'KUED Data Export Modules.',
+    'page callback' => 'kued_data_page',
+		'access callback' => 'user_access',
+    'access arguments' => array('administer kued_data'),
+    'type' => MENU_NORMAL_ITEM,
+		//'access callback' => TRUE,
+    'expanded' => TRUE,
+  );
+
+  $items['admin/config/content/kued/data/program'] = array(
+    'title' => 'Program Guide Export',
+    'description' => 'Program Guide Export',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('kued_data_page_program'),
+		'access callback' => 'user_access',
+    'access arguments' => array('administer kued_data'),
+    'type' => MENU_LOCAL_TASK,
+		//'access callback' => TRUE,
+    'expanded' => TRUE,
+    'file' => 'kued_data.export.inc',
+		'#weight' => 1,
+  );
+
+  $items['admin/config/content/kued/data/refresh'] = array(
+    'title' => 'Program Guide Refresh',
+    'description' => 'Program Guide Refresh',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('kued_data_refresh'),
+		'access callback' => 'user_access',
+    'access arguments' => array('administer kued_data'),
+    'type' => MENU_LOCAL_TASK,
+		//'access callback' => TRUE,
+    'expanded' => TRUE,
+    'file' => 'kued_data.import.inc',
+		'#weight' => 2,
+  );
+
+  $items['admin/config/content/kued/data/connect'] = array(
+    'title' => 'Corrisponding Entity Reference Connector',
+    'description' => 'Connects entities that share a name',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('kued_data_page_connect'),
+		'access callback' => 'user_access',
+    'access arguments' => array('administer kued_data'),
+    'type' => MENU_LOCAL_TASK,
+		//'access callback' => TRUE,
+    'expanded' => TRUE,
+    'file' => 'kued_data.connect.inc',
+		'#weight' => -10,
+  );
+
+  return $items;
+}
+
+
+function kued_data_page() {
+  return array(
+		'#markup' => t('Export Protrack and other types of data.<br />Export: <a href="@lyric_data">Lyric Data</a> | <a href="@program_listings">Program Listings</a> | <a href="@seven_guide">Seven Guide</a>',
+		array('@lyric_data' => url('admin/config/content/kued/data/lyric',array('absolute' => TRUE)),'@program_listings' => url('admin/config/content/kued/data/program',array('absolute' => TRUE)),'@seven_guide' => url('admin/config/content/kued/data/seven',array('absolute' => TRUE))))
+	);
+}
+
+/*
+function kued_mobile_preprocess_html(&$vars) {
+  dpm($vars);
+}
+*/
+
+/**
+ * Implements hook_libraries_info().
+ */
+function kued_data_libraries_info() {
+  $libraries = array();
+  $libraries['kued'] = array(
+    'name' => 'KUED Scripts',
+		'version callback' => 'short_circuit_version',
+    'files' => array(
+      'js' => array(
+        'kued.js',
+      ),
+    ),
+  );
+  return $libraries;
+}
+/**
+* Short-circuit the version argument.
+*/
+function short_circuit_version() {
+  return TRUE;
+}
+/**
+ * Implements hook_preprocess_page().
+ * Adds KUED JS to the entire site.
+ */
+function kued_data_preprocess_page(&$vars) {
+	$library_added = libraries_load('kued');
+
+  /*
+  // Encryption Testing!!!!
+  global $user;
+  dpm($user);
+  if ($user->uid == 1) {
+  // do fancy stuff
+  $form['field_end_date']['#disabled'] = FALSE;
+    $pre = 'Hi James.  This is the voice inside your head.';
+    dpm($pre);
+   // Encrypt data.
+    $encrypted = encrypt($pre);
+    dpm($encrypted);
+    // Decrypt data.);
+    $decrypted = decrypt($encrypted);
+    dpm($decrypted);
+  }
+  */
+
+}
+
+
+/**
+* Form function, called by drupal_get_form()
+* in protrack_import_menu().
+*/
+function kued_data_page_connect($form, &$form_state) {
+//dpm($form_state);
+
+/*
+// Some trouble shooting that is bugging me.
+$result = db_query('SELECT * FROM {queue}');
+foreach ($result as $record) {
+dpm($record);
+//$queue_item = unserialize($record['data']);
+$queue_item = $record['data'];
+dpm($queue_item);
+}
+*/
+
+	$form['connect'] = array(
+	  '#type' => 'fieldset',
+	  '#title' => t('Corrisponding Entity Reference Connector'),
+	  '#weight' => 5,
+	  '#collapsible' => FALSE,
+	  '#collapsed' => FALSE,	
+	);
+
+	$content_types = kued_data_connect_get_content_types();
+	//kpr($content_types);
+	//kpr($form_state);
+	if(!empty($form_state['values']['source'])){
+		$content_source_default = $form_state['values']['source'];
+	} else {
+		$content_source_default = '';
+	}
+	if(!empty($form_state['values']['target'])){
+		$content_target_default = $form_state['values']['target'];
+	} else {
+		$content_target_default = '';
+	}
+	$form['connect']['source'] = array(
+		'#type' => 'select',
+		'#title' => t('Source'),
+		'#options' => $content_types,
+		'#default' => $content_source_default,
+	);
+	$form['connect']['target'] = array(
+		'#type' => 'select',
+		'#title' => t('Target'),
+		'#options' => $content_types,
+		'#default' => $content_target_default,
+	);
+
+
+	// Send the form
+	$form['connect']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Execute (*there is no undo!)'),
+	);
+return $form;
+}
+
+function kued_data_page_connect_submit($form, &$form_state){
+	$form_values = $form_state['values'];
+	//dsm($form_state);
+	//dsm($form_values);
+	$source = $form_values['source'];
+	$target = $form_values['target'];
+	kued_data_connect_run($source, $target);
+	//$form_state['rebuild'] = TRUE;
+}
+
+
+/**
+* Form function, called by drupal_get_form()
+* in protrack_import_menu().
+*/
+function kued_data_page_program($form, &$form_state) {
+//kpr($form_state);
+	$form['export'] = array(
+	  '#type' => 'fieldset',
+	  '#title' => t('Program Guide Export'),
+	  '#weight' => 5,
+	  '#collapsible' => FALSE,
+	  '#collapsed' => FALSE,	
+		);
+
+	$form['export']['details'] = array(
+		'#markup' => t('<em>Please Note</em>: If the export you perform is missing Series or Episode titles (or any other data) please perform a <a href="/admin/config/content/kued/data/refresh">Program Guide Refresh</a>.  This action will ensure that the export contains the very latest ProTrack content.  It should only be necessary if anything is missing.'),
+	);
+	// Display the channels
+	$channels = array('KUED-HD' => 'KUED HD Channel 7.1', 'WORLD' => 'KUED World Channel 7.2', 'KIDS CH' => 'KUED Kids 24-7 7.3', 'CREATE' => 'Create 7.4');
+	$form['export']['channel'] = array(
+		'#type' => 'select',
+		'#title' => t('Export programming data for'),
+		'#options' => $channels,
+		'#default_value' => 'KUED-HD',
+	);
+	// Display the description
+	$description = array('short' => 'Short', 'long' => 'Long');
+	$form['export']['description'] = array(
+		'#type' => 'select',
+		'#title' => t('Description length'),
+		'#options' => $description,
+		'#default_value' => 'short',
+	);
+	// Display form
+	$form_of = array('web' => 'Web Page', 'document' => 'Document');
+	//$form_of = array('web' => 'Web Page');
+	$form['export']['form'] = array(
+		'#type' => 'select',
+		'#title' => t('In the form of'),
+		'#options' => $form_of,
+		'#default_value' => 'web',
+	);
+	// Display format
+	$format_options = array('seven' => 'Seven Guide', 'grid' => 'Grid Layout','outgoing' => 'Outgoing Listings', 'lyric' => 'Lyric Data');
+	$form['export']['format'] = array(
+		'#type' => 'select',
+		'#title' => t('Formatted for'),
+		'#options' => $format_options,
+		'#default_value' => 'seven',
+	);
+	$date_options = array('weeks' => 'Weeks', 'months' => 'Months');
+	$form['export']['time_frame'] = array(
+		'#type' => 'radios',
+		'#title' => t('Date Options'),
+		'#options' => $date_options,
+		'#default_value' => 'months',
+		'#required' => TRUE,
+	);
+
+	// Build Months Search
+	$today = strtotime('this month');
+	$this_month = date('n', $today);
+	$this_year = date('Y', $today);
+	// Adjust for the leading zero
+	$length = strlen($this_month);
+	if($length < 2){
+		$this_month = '0' . $this_month;
+	}
+
+	$this_month = $this_year . '-' . $this_month . '-01';
+
+	$months = array();
+	$months[] = strtotime($this_month . ' -1 Month');
+	$months[] = strtotime($this_month);
+	$months[] = strtotime($this_month . ' +1 Month');
+	$months[] = strtotime($this_month . ' +2 Months');
+
+	foreach ($months AS $month) {
+		$month_title = t(date('F', $month));
+		$year = t(date('Y', $month));
+		$months_options[strtotime($month_title . ' ' . $year)] = $month_title . ' ' . $year;
+	}
+	// Make the default
+	$months_default = strtotime('this Month');
+	$month_title_default = t(date('F', $months_default));
+	$month_year_default = t(date('Y', $month));
+	$months_options_default[] = strtotime($month_title_default . ' ' . $month_year_default);
+
+	$form['export']['months'] = array(
+		'#type' => 'checkboxes',
+		'#title' => t('For these Months'),
+		'#options' => $months_options,
+		'#default_value' => $months_options_default,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="time_frame"]' => array('value' => 'months'),
+      ),
+    ),
+	);
+
+	// Build Weeks Search
+	$weeks[] = strtotime('last sunday - 2 weeks');
+	$weeks[] = strtotime('last sunday - 1 week');
+	$weeks[] = strtotime('last sunday');
+	$weeks[] = strtotime('last sunday + 1 week');
+	$weeks[] = strtotime('last sunday + 2 weeks');
+	$weeks[] = strtotime('last sunday + 3 weeks');
+	$weeks[] = strtotime('last sunday + 4 weeks');
+	$weeks[] = strtotime('last sunday + 5 weeks');
+	$weeks[] = strtotime('last sunday + 6 weeks');
+	$weeks[] = strtotime('last sunday + 7 weeks');
+	$weeks[] = strtotime('last sunday + 8 weeks');
+	$weeks[] = strtotime('last sunday + 9 weeks');
+	$weeks[] = strtotime('last sunday + 10 weeks');
+	$weeks[] = strtotime('last sunday + 11 weeks');
+	$weeks[] = strtotime('last sunday + 12 weeks');
+	
+	foreach($weeks as $week) {
+		$week_title = t(date('l F jS, Y', $week));
+		$week_number = strtotime(date('Y\WW', $week).' - 1 day');
+		$weeks_options[$week_number] = $week_title;
+	}
+	// Make the default
+	$weeks_options_default[] = strtotime('last sunday');
+
+	$form['export']['weeks'] = array(
+		'#type' => 'checkboxes',
+		'#title' => t('For these Weeks'),
+		'#options' => $weeks_options,
+		//'#default_value' => $weeks_options_default,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="time_frame"]' => array('value' => 'weeks'),
+      ),
+    ),
+	);
+
+	// Send the form
+	$form['export']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Export Data'),
+	);
+
+	if(!empty($form_state['input']['iframe'])) {
+			//dsm($form_state['input']['iframe']);
+
+		// File display
+		$iframe_link = file_create_url($form_state['input']['iframe']);
+		$iframe_display = '<iframe width="100%" height="600" frameborder="1" id="kued-data-preview" src="' . $iframe_link . '"></iframe>';
+
+		$form['data'] = array(
+			'#type' => 'fieldset',
+			'#title' => t('Program Guide Export'),
+			'#weight' => 5,
+			'#collapsible' => FALSE,
+			'#collapsed' => FALSE,	
+			);
+	
+		$form['data']['preview_link'] = array(
+			'#type' => 'item',
+			'#title' => t('Preview: ' . l('Click Here to view file', $iframe_link, array('attributes' => array('target'=>'_blank')))),
+			//'#description' => $template['description'],
+		);
+	
+		$form['data']['preview'] = array(
+			'#type' => 'markup',
+			'#markup' => $iframe_display,
+		);
+	}
+  return $form;
+}
+
+function kued_data_page_program_submit($form, &$form_state){
+//dsm($form_state);
+	$form_state['rebuild'] = TRUE;
+	$data['time_frame'] = $form_state['values']['time_frame'];
+	$data['channel'] = $form_state['values']['channel'];
+	$data['weeks'] = $form_state['values']['weeks'];
+	$data['months'] = $form_state['values']['months'];
+	$data['description'] = $form_state['values']['description'];
+	$data['form'] = $form_state['values']['form'];
+	$data['format'] = $form_state['values']['format'];
+	$form_state['input']['iframe'] = kued_data_export_program($data);
+}
+
+
+/**
+* Implements hook_wysiwyg_editor_settings_alter().
+*/
+function kued_data_wysiwyg_editor_settings_alter(&$settings, $context) {
+  if ($context['profile']->editor == 'ckeditor') {
+    $settings['allowedContent'] = TRUE;
+  }
+}
+
+/**
+* Tweak the home page feature view so that duplicate series and episode titles don't appear.
+*/
+function kued_data_views_pre_render(&$view) {
+	// Looking for a View title nodequeue_1
+  if ($view->name == 'nodequeue_1') {
+    foreach($view->result as $r => $result) {
+			// Hide the result if the two titles are the same.
+      if(isset($result->node_field_data_field_series_link_title) && isset($result->node_title)) {
+        if($result->node_field_data_field_series_link_title == $result->node_title || $result->node_field_data_field_series_link_title == 'KUED Local Productions') {
+          $result->node_field_data_field_series_link_title = '';
+        }
+      }
+    }
+  }
+  if ($view->name == 'videos_block') {
+    foreach($view->result as $r => $result) {
+			// Hide the result if the two titles are the same.
+      if(isset($result->node_field_data_field_series_link_title) && isset($result->node_title)) {
+        if($result->node_field_data_field_series_link_title == $result->node_title){
+          $result->node_field_data_field_series_link_title = '';
+        }
+			}
+    }
+  }
+  /*
+  if ($view->name == "hinckley_report" && $view->current_display == 'previous_episodes') {
+dpm('view found');
+foreach($view->result as $r => $result) {
+//dpm($result);
+}
+    $view->offset = 1;
+
+}
+*/
+
+// other views might go here
+}
+
+
+
+/**
+* This hook allows to alter the commands which are used on a views ajax
+* request.
+*
+* @param $commands
+* An array of ajax commands
+* @param $view view
+* The view which is requested.
+*/
+function kued_data_views_ajax_data_alter(&$commands, $view) {
+  // Replace Views' method for scrolling to the top of the element with your
+  // custom scrolling method.
+  if (!path_is_admin(current_path())) {
+    //drupal_add_js(drupal_get_path('module', 'kued_data') .'/js/custom_views_scroll.js');
+    foreach ($commands as &$command) {
+      if ($command['command'] == 'viewsScrollTop') {
+      $command['command'] = 'customViewsScrollTop';
+      }
+    }
+  }
+  //dpm($view);
+  //dpm($commands);
+}
+
+
+
+/*
+function kued_data_views_pre_build(&$view) {
+  if ($view->name == "hinckley_report" && $view->current_display == 'previous_episodes') {
+    $view->init_pager();
+    $view->set_items_per_page('1');
+  }
+}
+*/
+function kued_data_views_pre_view(&$view, &$display_id = null , &$args = null) {
+  if ($view->name == "hinckley_report" && $view->current_display == 'previous_episodes') {
+    $now = REQUEST_TIME;
+    $day_of_week = date("l", $now);
+    /*
+    $start = strtotime('today 1:24pm');
+    $end = strtotime('today 2:15pm');
+    if ($start <= $now && $end >= $now) {
+    }
+    */
+    switch ($day_of_week) {
+      default:
+      case "Saturday":
+      case "Sunday":
+      case "Monday":
+      case "Tuesday":
+      case "Wednesday":
+      case "Thursday":
+        $pager = $view->display_handler->get_option('pager');
+        $pager['options']['offset'] = 1;
+        $view->display_handler->override_option('pager', $pager);
+      break;
+      case "Friday":
+        $pager = $view->display_handler->get_option('pager');
+        $pager['options']['offset'] = 0;
+        $view->display_handler->override_option('pager', $pager);
+      break;
+    }
+  }
+}

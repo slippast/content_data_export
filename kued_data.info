@@ -1,0 +1,10 @@
+name = KUED Data Export Modules
+description = Provides a place to export Protrack and other types of data
+package = KUED Modules
+version = VERSION
+core = 7.x
+
+files[] = kued_data.module
+files[] = kued_data.functions.inc
+files[] = kued_data.export.inc
+files[] = kued_data.connect.inc
