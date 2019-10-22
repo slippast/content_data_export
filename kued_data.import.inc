@@ -114,21 +114,10 @@ function kued_data_refresh_collect($item) {
        $batch['operations'][] = array('kued_data_refresh_import', array($episode_location)); 
      }
   }
-  //dpm($file_check);
 
-    /*
-    array('kued_data_refresh_import', array($airlist_location)),
-    array('kued_data_refresh_import', array($series_location)),
-    array('kued_data_refresh_import', array($episode_location)),
-    */
-
-	//dsm($batch);
   if($file_check == 1) {
     // set batch
     batch_set($batch);
-    // process batch
-    //batch_process('mybatch');
-    //batch_process($redirect_path);
   }
 }
 
@@ -200,7 +189,6 @@ function kued_data_refresh_empty($file = '', &$context = '') {
  * Reload the protrack data
  */
 function kued_data_refresh_import($data_file, &$context){
-	//dpm($data_file);
 	if (empty($context['sandbox'])) {
 		$context['sandbox']['progress'] = 0;
 		$context['sandbox']['max'] = count(file($data_file));
@@ -217,17 +205,14 @@ function kued_data_refresh_import($data_file, &$context){
 	$file_type_check1 = strpos($data_file, 'series'); // Files is Series
 		if($file_type_check1 !== FALSE) {
       $file_type = 'series';
-      //drupal_set_message(t('Series Import'));
 		}
 	$file_type_check2 = strpos($data_file, 'episode'); // Files is Episode
 		if($file_type_check2 !== FALSE) {
       $file_type = 'episode';
-      //drupal_set_message(t('Episode Import'));
 		}
 	$file_type_check3 = strpos($data_file, 'airlist'); // File is Airlist
 		if($file_type_check3 !== FALSE) {
       $file_type = 'airlist';
-      //drupal_set_message(t('Airlist Import'));
 		}
 
   // check if file pointer position exists in the sandbox, and jump to location in file
@@ -245,23 +230,17 @@ function kued_data_refresh_import($data_file, &$context){
 			if($file_type == 'series') {
 					// Skip the first line
 					if(is_numeric($file_data_row[0])) {
-            //dsm($file_data_row[0]);
 						kued_data_series_protrack_single($file_data_row);
-						//drupal_set_message('series');
 					}
 				} elseif($file_type == 'episode') {
 					// Skip the first line
 					if(is_numeric($file_data_row[1])) {
-						//dsm($file_data_row[1]);
 						kued_data_episode_protrack_single($file_data_row);
-						//drupal_set_message('episode');
 					}
 				} elseif($file_type == 'airlist') {
 					// Skip the first line
 					if(is_numeric($file_data_row[1])) {
-						//dsm($file_data_row[1]);
 						kued_data_airlist_protrack_single($file_data_row);
-						//drupal_set_message('airlist');
 					}
 				}
 			$context['sandbox']['progress']++;
@@ -288,9 +267,11 @@ function kued_data_refresh_import($data_file, &$context){
   }
 }
 
-
+/**
+ * Import Airlist items
+ */
 function kued_data_airlist_protrack_single($row){
-	//Filter out the UEN crap
+	//Filter out the UEN content
 	$channel = $row['5'];
 	if($channel != 'KUEN-DT' && $channel != 'MHZ' && $channel != 'FNX') {
     $airlist_row = array(
@@ -306,6 +287,10 @@ function kued_data_airlist_protrack_single($row){
       ->execute();
    }
 }
+
+/**
+ * Import Series items
+ */
 function kued_data_series_protrack_single($row){
 	$row[2] = drupal_convert_to_utf8(trim($row[2]), 'ISO-8859-1');
 
@@ -327,8 +312,10 @@ function kued_data_series_protrack_single($row){
 	->execute();
 }
 
+/**
+ * Import Episode items
+ */
 function kued_data_episode_protrack_single($row){
-	//drupal_set_message($row[1]);
 	$row[5] = drupal_convert_to_utf8(trim($row[5]), 'ISO-8859-1');
 	$row[23] = trim($row[23]);
 	$row[24] = trim($row[24]);

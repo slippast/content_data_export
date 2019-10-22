@@ -1,6 +1,8 @@
 <?php
 
-// Private function to find all content types that have an entity references.
+/**
+ * Private function to find all content types that have an entity references.
+ */
 function kued_data_connect_get_content_types() {
 	$fields = field_info_fields();
 	$content = array();
@@ -14,17 +16,16 @@ function kued_data_connect_get_content_types() {
 			}
 		}
 	}
-//kpr($content);
-asort($content);
-return $content;
+  asort($content);
+  return $content;
 }
 
-
+/**
+ * Data connection
+ */
 function kued_data_connect_run($source, $target){
 	$source_parts = explode(',', $source);
 	$target_parts = explode(',', $target);
-	//dsm($source_parts);
-	//dsm($target_parts);
 
   $query = new EntityFieldQuery();
 	$query->entityCondition('entity_type', $source_parts[0])
@@ -37,9 +38,6 @@ function kued_data_connect_run($source, $target){
 		->entityCondition('bundle', $target_parts[1])
 		->count();
   $target_count = $query->execute();
-	//dsm($source_count);
-	//dsm($target_count);
-
 
   $main_query = new EntityFieldQuery();
 	$main_query->entityCondition('entity_type', $source_parts[0])
@@ -48,67 +46,31 @@ function kued_data_connect_run($source, $target){
 		->addMetaData('account', user_load(1)); // Run the query as user 1.
   $source_nodes = $main_query->execute();
 
-//dsm('step 1');
-//kued_data_connect_batch($source_count, $source_nodes);
-
-
   foreach($source_nodes['node'] as $source_node) {
 		$node = node_load($source_node->nid, $source_node->vid, TRUE);
-		//dsm($node->title);
-    //node_delete($node->nid);
 
 		$query = new EntityFieldQuery();
 		$query->entityCondition('entity_type', $target_parts[0])
 			->entityCondition('bundle', $target_parts[1])
 			->propertyCondition('title', $node->title, '=');
 			$result = $query->execute();
-		if($result){
-			//dsm($result);
-
-
-
-			foreach($result as $node_info){
-				//dsm($node_info);
+		if($result) {
+			foreach($result as $node_info) {
 				$nid = key($node_info);
-				//dsm($nid);
 				$node_update = node_load($nid);
 				if(!isset($node->field_location_link[$node->language][0]['target_id']) && $node->field_location_link[$node->language][0]['target_id'] != $node_update->nid){
 				$node->field_location_link[$node->language][0]['target_id'] = $node_update->nid;
-				//dsm($node);
-				//dsm($node_update);
-
 					//Save the node!
 					if($node = node_submit($node)) {
-					//drupal_set_message(t('made it'));
 						node_save($node);
 						$nid = $node->nid;
 					}
 				}	
 			}
-
-			//$node_update = node_load(array_keys($node_update), TRUE);
-			//dsm($node_update);
 		} else {
-			//dsm('failed...'.$node->title);
+      // Do nothing
 		}
   }
-//unset($query);
-
-/*
-  $query = new EntityFieldQuery();
-	$query->entityCondition('entity_type', $source_parts[0])
-		->entityCondition('bundle', $source_parts[1])
-		//->range(0, 10)
-		//->addMetaData('account', user_load(1)); // Run the query as user 1.
-		->count();
-  $source_count = $query->execute();
-
-  foreach($result['node'] as $nodes){
-		dsm($node);
-    //node_delete($node->nid);
-  }
-*/
-
 }
 
 /**
@@ -117,18 +79,6 @@ function kued_data_connect_run($source, $target){
 function kued_data_connect_batch($node_count, $nodes) {
 	$redirect_path = 'admin/config/content/kued/data/connect';
   // Give helpful information about how many nodes are being operated on.
-  //drupal_set_message(t('There are @node_count nodes to be processed', array('@node_count' => $node_count)));
-
-//dsm('step 2');
-//dsm($nodes);
-/*
-	$operations = array();
-	$operations['nodes'] = $nodes;
-	$operations['node_count'] = $node_count;
-*/
-//dsm($operations);
-//$stuff = array('stuff','more','howdy');
-
   $batch = array(
 		'title' => t('Connecting Nodes'),
     'operations' => array(
@@ -141,36 +91,28 @@ function kued_data_connect_batch($node_count, $nodes) {
     'error_message' => t('Process had an error.'),
   );
 
-	//dsm($batch);
   // set batch
   batch_set($batch);
   // process batch
   batch_process($redirect_path);
 }
 
-
 /**
  * Batch operation 
  */
-function _kued_data_connect_operation($operations, &$context) {
-//dpm($operations);
-//drupal_set_message(t('step 3'));
-
-//kpr('step 3');
-//dsm($context);
 /*
+// Kept for reference
+function _kued_data_connect_operation($operations, &$context) {
+
   if (empty($context['sandbox'])) {
     $context['sandbox'] = array();
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_node'] = 0;
-
     // Save node count for the termination message.
     $context['sandbox']['max'] = $operations['node_count'];
   }
-
   $limit = 5;
-
-$result = array('stuff','more','howdy');
+  $result = array('stuff','more','howdy');
 
   // Retrieve the next group of nids.
   $result = db_select('node', 'n')
@@ -181,80 +123,62 @@ $result = array('stuff','more','howdy');
     ->limit($limit)
     ->execute();
 
-
-  foreach($operations['node'] as $source_node) {
-		$node = node_load($source_node->nid, $source_node->vid, TRUE);
-		//dsm($node->title);
-    //node_delete($node->nid);
-
-		$query = new EntityFieldQuery();
-		$query->entityCondition('entity_type', $target_parts[0])
-			->entityCondition('bundle', $target_parts[1])
-			->propertyCondition('title', $node->title, '=');
-			$result = $query->execute();
-		if($result){
-			kpr($results);
-
-
-
-			foreach($result as $node_info){
-				//dsm($node_info);
-				$nid = key($node_info);
-				//dsm($nid);
-				$node_update = node_load($nid);
-				if(!isset($node->field_location_link[$node->language][0]['target_id']) && $node->field_location_link[$node->language][0]['target_id'] != $node_update->nid){
-				$node->field_location_link[$node->language][0]['target_id'] = $node_update->nid;
-				dsm($node);
-				//dsm($node_update);
-
-					//Save the node!
-					if($node = node_submit($node)) {
-					//drupal_set_message(t('made it'));
-						//node_save($node);
-						//$nid = $node->nid;
-					}
-				}	
-			}
-
-			$node_update = node_load(array_keys($node_update), TRUE);
-			dsm($node_update);
-		} else {
-			//dsm('failed...'.$node->title);
+    foreach($operations['node'] as $source_node) {
+      $node = node_load($source_node->nid, $source_node->vid, TRUE);
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', $target_parts[0])
+        ->entityCondition('bundle', $target_parts[1])
+        ->propertyCondition('title', $node->title, '=');
+        $result = $query->execute();
+      if($result){
+        foreach($result as $node_info){
+          //dsm($node_info);
+          $nid = key($node_info);
+          //dsm($nid);
+          $node_update = node_load($nid);
+          if(!isset($node->field_location_link[$node->language][0]['target_id']) && $node->field_location_link[$node->language][0]['target_id'] != $node_update->nid){
+          $node->field_location_link[$node->language][0]['target_id'] = $node_update->nid;
+  
+            //Save the node!
+            if($node = node_submit($node)) {
+            //drupal_set_message(t('made it'));
+              //node_save($node);
+              //$nid = $node->nid;
+            }
+          }	
+        }
+        $node_update = node_load(array_keys($node_update), TRUE);
+      } else {
 		}
   }
-*/
 
-
-/*
   foreach ($result as $row) {
     // Here we actually perform our dummy 'processing' on the current node.
     //$node = node_load($row->nid, NULL, TRUE);
-
     // Store some results for post-processing in the 'finished' callback.
     // The contents of 'results' will be available as $results in the
     // 'finished' function (in this example, batch_example_finished()).
     //$context['results'][] = $node->nid . ' : ' . check_plain($node->title) . ' ' . $operation_details;
-dsm('step 3');
     // Update our progress information.
     $context['sandbox']['progress']++;
     $context['sandbox']['current_node'] = $node->nid;
     $context['message'] = check_plain($row);
   }
-
-
   // Inform the batch engine that we are not finished,
   // and provide an estimation of the completion level we reached.
   if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
     $context['finished'] = ($context['sandbox']['progress'] >= $context['sandbox']['max']);
   }
   //_batch_example_update_http_requests();
-*/
+
 }
+*/
 
 /**
  * Batch 'finished' callback used by both batch 1 and batch 2.
  */
  /*
+ // Kept for reference
 function kued_data_connect_operation_finished($success, $results, $operations) {
 	dsm('step 5');
   if ($success) {

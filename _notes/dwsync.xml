@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <dwsync>
-<file name="kued_data.module" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132062175527091636" remote="132062175530000000" Dst="2" />
-<file name="kued_data.connect.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="131333822817426151" remote="131333822820000000" Dst="1" />
-<file name="kued_data.functions.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="131594910676335366" remote="131594910670000000" Dst="1" />
-<file name="kued_data.info" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="130735956690000000" remote="130735956690000000" Dst="1" />
-<file name="kued_data.export.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132068228516828607" remote="132068228520000000" Dst="2" />
-<file name="kued_data.import.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="131831553753106651" remote="131831553750000000" Dst="2" />
+<file name="kued_data.module" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132162467623134607" remote="132162467620000000" Dst="2" />
+<file name="kued_data.info" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="130735920690000000" remote="130735920690000000" Dst="2" />
+<file name="kued_data.import.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132162469487164874" remote="132162469490000000" Dst="2" />
+<file name="kued_data.functions.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132162496050095622" remote="132162496050000000" Dst="2" />
+<file name="kued_data.export.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132162497301821129" remote="132162497300000000" Dst="2" />
+<file name="kued_data.export-BAK10-04-13.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="130253802490000000" remote="130253802490000000" Dst="2" />
+<file name="kued_data.connect.inc" server="gateway01.uen.org//web/rc-upld/wwwkued/sites/" local="132162500572674295" remote="132162500570000000" Dst="2" />
 </dwsync>

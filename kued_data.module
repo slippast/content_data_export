@@ -25,10 +25,8 @@ function kued_data_menu() {
 		'access callback' => 'user_access',
     'access arguments' => array('administer kued_data'),
     'type' => MENU_NORMAL_ITEM,
-		//'access callback' => TRUE,
     'expanded' => TRUE,
   );
-
   $items['admin/config/content/kued/data/program'] = array(
     'title' => 'Program Guide Export',
     'description' => 'Program Guide Export',
@@ -37,12 +35,10 @@ function kued_data_menu() {
 		'access callback' => 'user_access',
     'access arguments' => array('administer kued_data'),
     'type' => MENU_LOCAL_TASK,
-		//'access callback' => TRUE,
     'expanded' => TRUE,
     'file' => 'kued_data.export.inc',
 		'#weight' => 1,
   );
-
   $items['admin/config/content/kued/data/refresh'] = array(
     'title' => 'Program Guide Refresh',
     'description' => 'Program Guide Refresh',
@@ -51,12 +47,10 @@ function kued_data_menu() {
 		'access callback' => 'user_access',
     'access arguments' => array('administer kued_data'),
     'type' => MENU_LOCAL_TASK,
-		//'access callback' => TRUE,
     'expanded' => TRUE,
     'file' => 'kued_data.import.inc',
 		'#weight' => 2,
   );
-
   $items['admin/config/content/kued/data/connect'] = array(
     'title' => 'Corrisponding Entity Reference Connector',
     'description' => 'Connects entities that share a name',
@@ -65,28 +59,22 @@ function kued_data_menu() {
 		'access callback' => 'user_access',
     'access arguments' => array('administer kued_data'),
     'type' => MENU_LOCAL_TASK,
-		//'access callback' => TRUE,
     'expanded' => TRUE,
     'file' => 'kued_data.connect.inc',
 		'#weight' => -10,
   );
-
   return $items;
 }
 
-
+/**
+ * Implements hook_page().
+ */
 function kued_data_page() {
   return array(
 		'#markup' => t('Export Protrack and other types of data.<br />Export: <a href="@lyric_data">Lyric Data</a> | <a href="@program_listings">Program Listings</a> | <a href="@seven_guide">Seven Guide</a>',
 		array('@lyric_data' => url('admin/config/content/kued/data/lyric',array('absolute' => TRUE)),'@program_listings' => url('admin/config/content/kued/data/program',array('absolute' => TRUE)),'@seven_guide' => url('admin/config/content/kued/data/seven',array('absolute' => TRUE))))
 	);
 }
-
-/*
-function kued_mobile_preprocess_html(&$vars) {
-  dpm($vars);
-}
-*/
 
 /**
  * Implements hook_libraries_info().
@@ -104,57 +92,37 @@ function kued_data_libraries_info() {
   );
   return $libraries;
 }
+
 /**
 * Short-circuit the version argument.
 */
 function short_circuit_version() {
   return TRUE;
 }
+
 /**
  * Implements hook_preprocess_page().
  * Adds KUED JS to the entire site.
  */
 function kued_data_preprocess_page(&$vars) {
 	$library_added = libraries_load('kued');
-
-  /*
-  // Encryption Testing!!!!
-  global $user;
-  dpm($user);
-  if ($user->uid == 1) {
-  // do fancy stuff
-  $form['field_end_date']['#disabled'] = FALSE;
-    $pre = 'Hi James.  This is the voice inside your head.';
-    dpm($pre);
-   // Encrypt data.
-    $encrypted = encrypt($pre);
-    dpm($encrypted);
-    // Decrypt data.);
-    $decrypted = decrypt($encrypted);
-    dpm($decrypted);
-  }
-  */
-
 }
-
 
 /**
 * Form function, called by drupal_get_form()
 * in protrack_import_menu().
 */
 function kued_data_page_connect($form, &$form_state) {
-//dpm($form_state);
-
-/*
-// Some trouble shooting that is bugging me.
-$result = db_query('SELECT * FROM {queue}');
-foreach ($result as $record) {
-dpm($record);
-//$queue_item = unserialize($record['data']);
-$queue_item = $record['data'];
-dpm($queue_item);
-}
-*/
+  /*
+  // Some trouble shooting that is bugging me.
+  $result = db_query('SELECT * FROM {queue}');
+  foreach ($result as $record) {
+    dpm($record);
+    //$queue_item = unserialize($record['data']);
+    $queue_item = $record['data'];
+    dpm($queue_item);
+  }
+  */
 
 	$form['connect'] = array(
 	  '#type' => 'fieldset',
@@ -165,8 +133,6 @@ dpm($queue_item);
 	);
 
 	$content_types = kued_data_connect_get_content_types();
-	//kpr($content_types);
-	//kpr($form_state);
 	if(!empty($form_state['values']['source'])){
 		$content_source_default = $form_state['values']['source'];
 	} else {
@@ -190,32 +156,28 @@ dpm($queue_item);
 		'#default' => $content_target_default,
 	);
 
-
 	// Send the form
 	$form['connect']['submit'] = array(
 		'#type' => 'submit',
 		'#value' => t('Execute (*there is no undo!)'),
 	);
-return $form;
+  return $form;
 }
 
+/**
+* Impliments form_submit()
+*/
 function kued_data_page_connect_submit($form, &$form_state){
 	$form_values = $form_state['values'];
-	//dsm($form_state);
-	//dsm($form_values);
 	$source = $form_values['source'];
 	$target = $form_values['target'];
 	kued_data_connect_run($source, $target);
-	//$form_state['rebuild'] = TRUE;
 }
 
-
 /**
-* Form function, called by drupal_get_form()
-* in protrack_import_menu().
+* Built a custom data display page
 */
 function kued_data_page_program($form, &$form_state) {
-//kpr($form_state);
 	$form['export'] = array(
 	  '#type' => 'fieldset',
 	  '#title' => t('Program Guide Export'),
@@ -227,6 +189,7 @@ function kued_data_page_program($form, &$form_state) {
 	$form['export']['details'] = array(
 		'#markup' => t('<em>Please Note</em>: If the export you perform is missing Series or Episode titles (or any other data) please perform a <a href="/admin/config/content/kued/data/refresh">Program Guide Refresh</a>.  This action will ensure that the export contains the very latest ProTrack content.  It should only be necessary if anything is missing.'),
 	);
+
 	// Display the channels
 	$channels = array('KUED-HD' => 'KUED HD Channel 7.1', 'WORLD' => 'KUED World Channel 7.2', 'KIDS CH' => 'KUED Kids 24-7 7.3', 'CREATE' => 'Create 7.4');
 	$form['export']['channel'] = array(
@@ -382,8 +345,10 @@ function kued_data_page_program($form, &$form_state) {
   return $form;
 }
 
+/**
+* Implements form_submit().
+*/
 function kued_data_page_program_submit($form, &$form_state){
-//dsm($form_state);
 	$form_state['rebuild'] = TRUE;
 	$data['time_frame'] = $form_state['values']['time_frame'];
 	$data['channel'] = $form_state['values']['channel'];
@@ -394,7 +359,6 @@ function kued_data_page_program_submit($form, &$form_state){
 	$data['format'] = $form_state['values']['format'];
 	$form_state['input']['iframe'] = kued_data_export_program($data);
 }
-
 
 /**
 * Implements hook_wysiwyg_editor_settings_alter().
@@ -430,21 +394,17 @@ function kued_data_views_pre_render(&$view) {
 			}
     }
   }
-  /*
+/*
+  // Kept for reference
   if ($view->name == "hinckley_report" && $view->current_display == 'previous_episodes') {
-dpm('view found');
-foreach($view->result as $r => $result) {
-//dpm($result);
-}
+    dpm('view found');
+    foreach($view->result as $r => $result) {
+      //dpm($result);
+    }
     $view->offset = 1;
-
-}
+  }
 */
-
-// other views might go here
 }
-
-
 
 /**
 * This hook allows to alter the commands which are used on a views ajax
@@ -459,37 +419,21 @@ function kued_data_views_ajax_data_alter(&$commands, $view) {
   // Replace Views' method for scrolling to the top of the element with your
   // custom scrolling method.
   if (!path_is_admin(current_path())) {
-    //drupal_add_js(drupal_get_path('module', 'kued_data') .'/js/custom_views_scroll.js');
     foreach ($commands as &$command) {
       if ($command['command'] == 'viewsScrollTop') {
       $command['command'] = 'customViewsScrollTop';
       }
     }
   }
-  //dpm($view);
-  //dpm($commands);
 }
 
-
-
-/*
-function kued_data_views_pre_build(&$view) {
-  if ($view->name == "hinckley_report" && $view->current_display == 'previous_episodes') {
-    $view->init_pager();
-    $view->set_items_per_page('1');
-  }
-}
-*/
+/**
+ * Impliments hook_views_pre_view()
+ */
 function kued_data_views_pre_view(&$view, &$display_id = null , &$args = null) {
   if ($view->name == "hinckley_report" && $view->current_display == 'previous_episodes') {
     $now = REQUEST_TIME;
     $day_of_week = date("l", $now);
-    /*
-    $start = strtotime('today 1:24pm');
-    $end = strtotime('today 2:15pm');
-    if ($start <= $now && $end >= $now) {
-    }
-    */
     switch ($day_of_week) {
       default:
       case "Saturday":

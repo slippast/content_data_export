@@ -1,8 +1,5 @@
 <?php
 
-/**
- * General data export handler
- */
 function kued_data_export_program($data) {
 	switch ($data['format']){
 		case 'seven':
@@ -45,6 +42,7 @@ function kued_data_export_program($data) {
 				$name = file_build_uri($directory.'/'.$name);
 				$collection_location = file_unmanaged_save_data($output, $name, $replace = FILE_EXISTS_REPLACE);
 			}
+			//dsm($collection);
 		break;
 		case 'outgoing';
 			$collection = kued_data_collect_seven($data);
@@ -66,24 +64,37 @@ function kued_data_export_program($data) {
 				$name = file_build_uri($directory.'/'.$name);
 				$collection_location = file_unmanaged_save_data($output, $name, $replace = FILE_EXISTS_REPLACE);
 			}
+			//dpm($collection);
 		break;
 	}
+	//dsm($collection);	
 	if(isset($collection_location)) {
 		return $collection_location;
 	}
+/*
+	if(isset($collection_location_alt)){
+		return $collection_location_alt;
+	}
+*/
 }
 
-/**
- * Seven export placeholder
- */
+
 function kued_data_export_seven($collection) {
 	$output = '';
+	$output .= '
+		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+		<html xmlns="http://www.w3.org/1999/xhtml">		
+		<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>KUED Data Export | Style: ' . strtoupper($data['format']) . ' | ' . date('F j, Y, g:i a', strtotime('now')) .'</title>
+		</head>
+		<body>
+		';
+
+
 	return $output;
 }
 
-/**
- * Program grid export
- */
 function kued_data_export_grid($collection) {
 	$output = '';
 	$output .= '
@@ -99,9 +110,6 @@ function kued_data_export_grid($collection) {
 	return $output;
 }
 
-/**
- * Lyric data export
- */
 function kued_data_export_lyric($collection) {
 	$output = '';
 	foreach($collection['months'] as $month) {
@@ -127,13 +135,34 @@ function kued_data_export_lyric($collection) {
 			}
 		}
 	}
+
+//dsm($output);
+/*
+	if ($output == "") { 
+		$output = "\n(0) Records Found!\n";
+	} else {
+		header("Cache-Control: ");// leave blank to avoid IE errors
+		header("Pragma: ");// leave blank to avoid IE errors
+		header("Content-type: application/octet-stream");
+	//	header("Content-Disposition: attachment; filename=\"$file\"");
+	//	header("Content-length:".(string)(filesize($filename)));
+	//	header("Content-type: application/x-msdownload");
+		header('Content-type: application/ms-excel');
+		header("Content-Disposition: attachment; filename=LYRIC-SerList_Ch({$show['channel']})_Made(" . date('M-d-Y') . ").xls"); 
+	//	header("Pragma: no-cache"); 
+		header("Expires: 0"); 
+	//	print "$header\n$data";
+		print trim($output);
+		$output = close();
+	}
+*/
 	return $output;
 }
 
-/**
- * Common data export
- */
+
+
 function kued_data_export_outgoing($collection) {
+	//dpm($collection);
 	$output = '';
 	$output .= '<html>';
 	$output .= '<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Windows-1252\">';
@@ -204,6 +233,13 @@ function kued_data_export_outgoing($collection) {
 					$output .= '<br /><br />';
 
 				}
+				/*
+				if(date('l', $day_timestamp) == 'Saturday'){
+					$output .= 'KUED HD Channel 7.1<br />';
+					$output .= '<strong>Listings for the week beginning ' . date('l, F jS, Y', $week['timestamp']) . '</strong><br />';
+					$output .= 'If you have questions about KUED\'s listings, please contact Elizabeth Renda at (801) 581-3065 or <a href="mailto:erenda@kued.org">lrenda@kued.org</a>.<br /><br />';
+				}
+				*/
 			}
 		}
 	}
@@ -212,12 +248,13 @@ function kued_data_export_outgoing($collection) {
 	return $output;
 }
 
-/**
- * Private function to build the big array of data to export
- */
+
+// Private function to build the big array of data to export
 function kued_data_collect_seven($data) {
 	module_load_include('inc', 'kued_data', 'kued_data.functions');
+	//dsm($data);
 	$one_day = 86400; // Number of seconds in a day
+
 	$document = '';
 
 	if($data['format'] == 'seven' || $data['format'] == 'grid') {
@@ -233,14 +270,13 @@ function kued_data_collect_seven($data) {
 		<body>
 		';
 	}
-  
-	$c = 1;
+
 	// Build framework for the month search
 	// must comply with the week search for data organization
-	if($data['time_frame'] == 'months') {
-		$data['weeks'] = array(); // Empty this variable because we'll reuse it now
+	if($data['time_frame'] == 'months'){
+		$data['weeks'] = '';
 		foreach($data['months'] as $month) {
-			if($month != 0) {
+			if($month != 0){
 
 				// First check the count to determine the number of cycles (days in the week)
 				$document .= "<h1 style='font-size:1.4em;'>Showing: " . date('M Y', $month) . " | Channel: " .  $data['channel'] . "</h2>";
@@ -260,93 +296,86 @@ function kued_data_collect_seven($data) {
 				$month_data['last_sunday'] = strtotime('last sunday of ' . $month_data['month'] . ' ' . $month_data['year']);
 				$month_data['begin_day_of_week'] = date('w', $month)+1;
 				$month_data['end_day_of_week'] = date('w', strtotime($month_data['last_day']))+1;
-
-				// Work out the range of days for the first week
-				if($month_data['begin_day_of_week'] != 7) {
-					$month_data['begin_range'] = ($month_data['begin_day_of_week'] - 7) * (-1);
-				} else {
-					$month_data['begin_range'] = 7;
-				}
-
-				$month_data['end_range'] = $month_data['end_day_of_week']+1;
+				
+				// Length of first and last weeks
+				$data['begin_range'] = $month_data['begin_day_of_week'];
+				$data['end_range'] = $month_data['end_day_of_week'];
 
 				// Build a weekly breakdown to send to the next function
 				$d = $month_data['begin_day_of_week'];
-				$i = 1;
-				while($i <= $month_data['total_days']) {
-
+				$i=1;
+				while($i <= $month_data['total_days']){
 					$month_data['current_day'][$i] = $d;
-					if($i == 1) {
+					if($i == 1){
 						$data['weeks'][] = strtotime($month_data['month'] . ' ' . $i . ' ' . $month_data['year']);
 					}
-					if($i != 1){
-						if($d == 1){
-							$data['weeks'][] = strtotime($month_data['month'] . ' ' . $i . ' ' . $month_data['year']);
-						}
+					if($d == 1){
+						$data['weeks'][] = strtotime($month_data['month'] . ' ' . $i . ' ' . $month_data['year']);
 					}
 					$month_data['current'][$i] = strtotime($month_data['month'] . ' ' . $i . ' ' . $month_data['year']);
 					$i++;
-					
 					if($d >= 7) {
 						$d = 1;
-						$c++;
 					} else {
-						$data['count'] = $c;
-						$month_data['count'] = $c;
 						$d++;
 					}
 				}
+				dpm($month_data);
 			}
 		}
-	// If the user selected weeks just render the entire week...
 	} elseif($data['time_frame'] == 'weeks') {
 		// Weeks is set, choose the default number of days to cycle through
-		$month_data['begin_day_of_week'] = 1;
-		$month_data['end_day_of_week'] = 1;
-		$month_data['begin_range'] = 7;
-		$month_data['end_range'] = 7;
-		// We need to total up the number of weeks been exported
-		foreach($data['weeks'] as $week) {
-			if($week != 0){
-				$data['count'] = $c;
-				$month_data['count'] = $c;
-			}
-			$c++;
-		}
+		$data['begin_range'] = 7;
+		$data['end_range'] = 7;
 	}
+
+	// We need to total up the number of weeks been exported
+	$c=1;
+	foreach($data['weeks'] as $week) {
+		if($week != 0){
+			$data['count'] = $c;
+		}
+		$c++;
+	}
+	dpm($data);
 
 	// This is the big array that we're going to return for formatting purposes
 	$collection = array();
-	$z = 1; // range counter
-	$d = 1; // outgoing counter
+	$z = 0; // range counter
+	$d = 0; // outgoing counter
 	// Everything is broken into weeks, now build the export
 	foreach($data['weeks'] as $week) {
-
 		if($week != 0){ // if week not empty then spin it
 			// First check the count to determine the number of cycles (days in the week)
-			if($data['format'] == 'seven') {
+			if($data['format'] == 'seven'){
 				//Set the document and go
 				$document .= "<h2 style='font-size:1.4em;'>" .  $data['channel'] . "</h2>";
 				$document .= "<h3 style='font-size:1.2em;'>Listings for the week beginning " . date('l, F jS, Y', $week) . "</h3>";
 			}
-						
+
 			// Set up some parameters here
-			if($z == 1){
-				$range = $month_data['begin_range'];
+			if($z == 0){
+				$range = $data['begin_range'];
+				//dpm($range);
 				$week_start = date('Y\WW', $week - ($one_day * ($range - 1))); // silly math to make this work
-			} elseif($z == $data['count']) {
-				$range = $month_data['end_range'];
+				if($range != 1){
+					$range = ($range - 8) * (-1);
+				} else {
+					$range = '';
+				}
+
+			} elseif($z == $data['count'] -1) {
+				$range = $data['end_range'];
 				$week_start = date('Y\WW', $week);
 			} else {
 				$range = 7;
 				$week_start = date('Y\WW', $week);
 			}
+			//dpm('range: '.$range);
+				//dpm($data);
 			$z++;
-
-			// Get the current day (first day of the week) for the 'weeks' view
-			if($data['time_frame'] == 'weeks') {
-				$current_day_ts = $week;
-			}
+			//dsm($week);
+			$current_day_ts = $week;
 			$current_month = date('M-Y', $week);
 
 			// Add to the big array that we're going to return to the build function
@@ -354,18 +383,11 @@ function kued_data_collect_seven($data) {
 			$collection['months'][$current_month]['weeks'][$week_start]['channel'] = $data['channel'];
 			$collection['months'][$current_month]['weeks'][$week_start]['title'] = "Listings for the week beginning " . date('l, F jS, Y', $week);
 
-			$i = 1;
+			$i=1;
 			// iterate through the range of days in the week
 			while($i <= $range) {
-				if($d > $month_data['total_days']){
-				} else {
-					// Get current day timestamp (already built)
-					if($data['time_frame'] == 'months') {
-						$current_day_ts = $month_data['current'][$d];
-						$d++;
-					}
-				}
 				$current_day = date('l F j Y, g:i a', $current_day_ts);
+				//dpm($current_day);
 				$week_day = date('l', $current_day_ts);
 				$week_date = date('jS', $current_day_ts);
 				// build the search parameters
@@ -416,7 +438,7 @@ function kued_data_collect_seven($data) {
 							$search['date_stamp'] = $current_day_ts;
 							$search['date_display'] = $current_day;
 							$search['begin'] = date('Y-m-d', $current_day_ts) . " 19:00:00";	// 7:00pm "today"
-              $search['end'] = date('Y-m-d', $current_day_ts) . " 22:50:00";		// 10:30am "tomorrow"
+							$search['end'] = date('Y-m-d', $current_day_ts) . " 22:30:00";		// 10:30am "tomorrow"
 						break;
 						case 'Saturday':
 						case 'Sunday':
@@ -425,7 +447,7 @@ function kued_data_collect_seven($data) {
 							$search['date_stamp'] = $current_day_ts;
 							$search['date_display'] = $current_day;
 							$search['begin'] = date('Y-m-d', $current_day_ts) . " 19:00:00";	// 7:00pm "today"
-              $search['end'] = date('Y-m-d', $current_day_ts) . " 22:50:00";		// 10:30am "tomorrow"
+							$search['end'] = date('Y-m-d', $current_day_ts) . " 22:30:00";		// 10:30am "tomorrow"
 						break;
 					}
 				break;
@@ -458,6 +480,7 @@ function kued_data_collect_seven($data) {
 				break;
 				}
 
+
 				$document .= '
 <br /><br /><strong>'.$week_date.' &nbsp; &nbsp; &nbsp; &nbsp; '.$week_day.'</strong><br />
 ';
@@ -469,6 +492,7 @@ function kued_data_collect_seven($data) {
 
 				// Here is where we build the main content
 				while($result = $results->fetchAssoc()) {
+					//kpr($result);
 					// set some defaults
 					$result['highlight'] = FALSE;
 					$result['am'] = FALSE;
@@ -487,7 +511,6 @@ function kued_data_collect_seven($data) {
 					// We need to turn on the highlight if needed
 					$result_ts = strtotime($result['fulldate']);
 					$current_hour = date('G', $result_ts);
-
 					if($search['week_day'] == TRUE){
 						if($time == '12:00') {
 							$result['am'] = TRUE;
@@ -499,11 +522,10 @@ function kued_data_collect_seven($data) {
 							$result['highlight'] = TRUE;
 						}
 					} elseif($search['week_day'] == FALSE) {
+						//if(preg_match("/06:00:00/", $result['fulldate']) || preg_match("/00:00:00/", $result['fulldate'])) {
 						if($time == '6:00' || $time == '12:00') {
-              if($current_hour < 12) {
-                $result['am'] = TRUE;
-                $time = $time.'A';
-              }
+							$result['am'] = TRUE;
+							$time = $time.'A';
 						}
 						if(preg_match("/12:00:00/", $result['fulldate'])) {
 							$time = 'Noon';
@@ -544,22 +566,28 @@ function kued_data_collect_seven($data) {
 					$result['time'] = $time;
 					$result['title'] = $title;
 					$collection['months'][$current_month]['weeks'][$week_start]['days'][$current_day_ts][] = $result;
-
+/*
+if(in_array('12:00A', $collection[$current_month][$week_start]['day'])) {
+    dsm('Got it on: '.$current_day.' '.$title);
+}
+*/
 					// End the body here
 					$document .= '</p>
 ';
 				}
 				// keep rolling through the loop
-				if($data['time_frame'] == 'weeks') {
-					$current_day_ts = $current_day_ts + $one_day;
-				}
+				$current_day_ts = $current_day_ts + $one_day;
 				$i++;
-				}
+			}
 
-			//86400 day
-			//604800 week
+//86400 day
+//604800 week
+
+			//dsm($week_start);
+			//dsm($current_day);
 			if(!empty($current_day)){
 			$display = date('F j, Y, g:i a', strtotime($current_day));
+			//dsm($display);
 			}
 		}
 	}
@@ -573,9 +601,8 @@ function kued_data_collect_seven($data) {
 	return $collection;
 }
 
-/**
- * Private function to build the titles
- */
+
+// Private function to build the titles
 function title_fix($title, $series_title, $episode_title, $highlight, $source, $format){
 	module_load_include('inc', 'kued_data', 'kued_data.functions');
 	// Fix the series title
@@ -614,7 +641,7 @@ function title_fix($title, $series_title, $episode_title, $highlight, $source, $
 function title_fix_filter($series_title) {
 	$haystack = array(
 		'POV',
-		'NOVA',
+		'Nova',
 		'Nature',
 		'Frontline',
 		'Masterpiece',
@@ -638,47 +665,90 @@ function title_fix_filter($series_title) {
 	}
 }
 
-/**
- * Private function to fix the minutes that are off
- */
+
+
+// Private function to fix the minutes that are off
 function time_fix($number){
 	// Make an array
 	$number = explode(':', $number);
 	// Granular to 5 minutes
-	if($number[1] == '00' || $number[1] == '01' || $number[1] == '02' || $number[1] == '03') {
+	if($number[1] == 00 || $number[1] == 01 || $number[1] == 02 || $number[1] == 03) {
 		$number[1] = '00';
-	} elseif($number[1] == '04' || $number[1] == '05' || $number[1] == '06') {
+	} elseif($number[1] == 04 || $number[1] == 05 || $number[1] == 06) {
 		$number[1] = '05';
-	} elseif($number[1] == '07' || $number[1] == '08' || $number[1] == '09' || $number[1] == '10' || $number[1] == '11' || $number[1] == '12') {
+	} elseif($number[1] == 07 || $number[1] == 08 || $number[1] == 09 || $number[1] == 10 || $number[1] == 11 || $number[1] == 12) {
 		$number[1] = '10';
-	} elseif($number[1] >= '13' && $number[1] <= '17') {
+	} elseif($number[1] >= 13 && $number[1] <= 17) {
 		$number[1] = '15';
-	} elseif($number[1] >= '18' && $number[1] <= '23') {
+	} elseif($number[1] >= 18 && $number[1] <= 23) {
 		$number[1] = '20';
-	} elseif($number[1] >= '24' && $number[1] <= '26') {
+	} elseif($number[1] >= 24 && $number[1] <= 26) {
 		$number[1] = '25';
-	} elseif($number[1] >= '27' && $number[1] <= '33') {
+	} elseif($number[1] >= 27 && $number[1] <= 33) {
 		$number[1] = '30';
-	} elseif($number[1] >= '34' && $number[1] <= '36') {
+	} elseif($number[1] >= 34 && $number[1] <= 36) {
 		$number[1] = '35';
-	} elseif($number[1] >= '37' && $number[1] <= '43') {
+	} elseif($number[1] >= 37 && $number[1] <= 43) {
 		$number[1] = '40';
-	} elseif($number[1] >= '44' && $number[1] <= '46') {
+	} elseif($number[1] >= 44 && $number[1] <= 46) {
 		$number[1] = '45';
-	} elseif($number[1] >= '47' && $number[1] <= '53') {
+	} elseif($number[1] >= 47 && $number[1] <= 53) {
 		$number[1] = '50';
-	} elseif($number[1] >= '54' && $number[1] <= '56') {
+	} elseif($number[1] >= 54 && $number[1] <= 56) {
 		$number[1] = '55';
-	} elseif($number[1] >= '57' && $number[1] <= '60') {
+	} elseif($number[1] >= 57 && $number[1] <= 60) {
 		$number[1] = '60';
 	}
 
-  if($number[1] == '60') {
-    $number[0] = $number[0] + 1;
-    $number[1] = '00';
-  }
+/*
+dpm($number);
+	if($number[1] <= 05) {
+	}
+	if($number[1] <= 15) {
+		$number[1] = '00';
+	} elseif ($number[1] >= 16 && $number[1] <= 44){
+		$number[1] = '30';
+	} elseif ($number[1] >= 45) {
+		$number[1] = '00';
+		$number[0] = $number[0] + 1;
+	}
+	if(isset($number[2])){
+		$number[2] = ':00';
+	} else {
+		$number[2] = '';
+	}
+	if(strlen($number[0]) < 2){
+		//$number[0] = '0'.$number[0];
+	}
+	$number = $number[0].':'.$number[1].$number[2];
+	*/
 
 	// Rebuild the number
 	$number = $number[0].':'.$number[1];
 	return $number;
 }
+
+
+
+
+
+
+
+
+
+/*
+function kued_data_build_seven_web($collection) {
+	$document = array();
+	$document['html'] = '';
+	$document['html'] .= '<html><head></head><body>';
+	$document['html'] .= '</body></html>';
+	return $document;
+}
+function kued_data_build_seven_grid($collection) {
+	$document = array();
+	$document['html'] = '';
+	$document['html'] .= '<html><head></head><body>';
+	$document['html'] .= '</body></html>';
+	return $document;
+}
+*/
